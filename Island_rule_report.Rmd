@@ -69,7 +69,7 @@ Reviewer # 2 stated that "...Island rule is island-dependent, strongly depending
   
 Below is a plot of the data (over years (x-axis) and by sex (color)). The islands are separate and the relationship between year, mass, and sex (regression) is shown for each island. The parameters and statistics for the regresssion and the assessment of how well the model fits the data are provided below in discusssion below the figure. **THIS FIGURE SHOULD BE ADDED TO THE PAPER**
   
-```{r,fig.cap="Figure 3"}
+```{r,fig.cap="Figure 3",fig.height=6.8,fig.height=3.9}
 fig3<-ggplot(data) +
 	aes(x=year,y=mass,color=sex) +
 	geom_point(position=position_jitter(width=0.5),size=2) +
@@ -91,6 +91,11 @@ fig3<-ggplot(data) +
 	facet_grid(~island,scales="free_x",space="free_x")
 fig3
 ```
+##**Save Figure in appropriate format for journal**
+```{r}
+ggsave(plot=fig3,filename = "fig3.eps",width=174,height=100,units="mm")
+```
+
 ###**Statistical analyses**  
  
 Analyze (`group_by()`) data separately by `island` and `sex`. Nest (`nest()`) data so that models can be fit and visualized easily.  
