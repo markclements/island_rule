@@ -1,0 +1,260 @@
+---
+title: "Island Rule Data Analysis"
+output:
+  html_document: default
+  html_notebook: default
+---
+Load necessary R packages to prepare data for analysis and visualization.
+
+```{r}
+library(googlesheets)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+```
+###**The Data**
+
+Google drive is used to store, share, and access the data. Data are in a google sheet ([CLICK HERE](https://docs.google.com/spreadsheets/d/1mqCaRwuZ0HnMAeVtQ4k-GktEFdChdJiUoweW5PXfZdU/edit?usp=sharing)) with 7 tabs. Data were originally entered by Lauren Nolfo-Clements into a excel spread sheet.   
+  
+Access the sheet data from Google Drive using the unique google URL key (`gs_key()`) for that sheet. Read data from sheet number 7 (ws =7) and store the values using function `gs_read_csv()` in a R dataframe called `data`.  
+```{r}
+gs_auth()
+rd<-gs_url("https://docs.google.com/spreadsheets/d/1mqCaRwuZ0HnMAeVtQ4k-GktEFdChdJiUoweW5PXfZdU/edit#gid=1368341786")
+data<-gs_read_csv(rd,ws=7)
+head(data)
+```
+The data from the google sheet are not in a [tidy format](https://www.jstatsoft.org/article/view/v059i10) (i.e., each column is a varaible and each row is an observation). Use `gather()` function to restructure the data. 
+
+```{r}
+data<-gather(data,is_sex,mass,na.rm=TRUE)
+head(data)
+```
+Convert body mass values in the `data` dataframe to numeric before plotting and visualization. 
+
+```{r}
+data$mass<-as.numeric(data$mass)
+head(data)
+```
+The temporary column `is_sex` contains 3 variables: 1) island sampled, 2) sex of *Peromyscus* captured, and 3) year of sampling. We split `is_sex` and restructure into three new variables (columns of `data`): island, sex, and year. Finally, convert two digit (i.e., 12) years into 4 digit (i.e, 2012) years. 
+
+```{r}
+data<-data %>% separate(is_sex,c("sex_is","year"),sep=2) 
+data<-data %>% separate(sex_is,c("island","sex"),sep=1)
+data$year<-as.numeric(str_c(20,data$year))
+data
+```
+For plotting purposes, change the codes for island names from B and P to the actual names of each island; Bumpkin and Pedocks.
+```{r}
+data$island[data$island=="B"]<-"Bumpkin Island"
+data$island[data$island=="P"]<-"Pedocks Island"
+head(data)
+```
+**Quick summary of the data**
+
+1) There are more males than females: 
+```{r}
+table(data$sex)
+```
+2) More animals were captured on Bumpkin Island
+```{r}
+table(data$island)
+```
+3) Most animals were captured in 2009 and 2014; fewer were captured in 2008 and 2012; and 2011 and 2015 had the lowest number of animals captured. 
+
+```{r}
+table(data$year)
+```
+Reviewer # 2 stated that "...Island rule is island-dependent, strongly depending on the ecological context on each island" and indicated that "...it is doubtful if the two islands should be pooled."  
+  
+Below is a plot of the data (over years (x-axis) and by sex (color)). The islands are separate and the relationship between year, mass, and sex (regression) is shown for each island. The parameters and statistics for the regresssion and the assessment of how well the model fits the data are provided below in discusssion below the figure. **THIS FIGURE SHOULD BE ADDED TO THE PAPER**
+  
+```{r,fig.cap="Figure 3"}
+fig3<-ggplot(data) +
+	aes(x=year,y=mass,color=sex) +
+	geom_point(position=position_jitter(width=0.5),size=2) +
+	scale_color_manual(name="Sex",values=c("black","grey50"),labels=c("Female","Male")) +
+	geom_smooth(method = "lm",se=F,size=0.5,lty=1)+
+	xlab("Year")+
+	ylab("Mass (grams)")+
+	scale_x_continuous(breaks=seq(2008,2015,1))+
+	scale_y_continuous(breaks=seq(15,45,6))+
+	theme(axis.title=element_text(face="plain",size=12)) +
+	theme(axis.text=element_text(size=12,color ="black"))+
+	theme(
+		axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
+		axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'))+
+	theme(panel.background=element_rect(colour="black",fill="NA",size=1))+
+	theme(legend.position=c(0.1,0.85),legend.key=element_rect(fill="NA"))+
+	theme(legend.background=element_rect(color="black",size=0.5))+
+	theme(strip.background=element_rect(fill="NA"),strip.text.x=element_text(size=12,face="plain"))+
+	facet_grid(~island,scales="free_x",space="free_x")
+fig3
+```
+###**Statistical analyses**  
+ 
+Analyze (`group_by()`) data separately by `island` and `sex`. Nest (`nest()`) data so that models can be fit and visualized easily.  
+```{r}
+library(broom)
+library(modelr)
+by_sex_island<- data %>% 
+	group_by(island,sex) %>%
+	nest()
+by_sex_island
+```
+Use `purrr` (R package) and `map` function to fit linear models (regression) to each group (`island` and `sex`) and store model statistics and paramaters as `model` in the `by_sex_island` data frame. 
+```{r}
+library(purrr)
+model<-function(df) {
+	lm(mass~year,data=df)
+}
+
+by_sex_island<-by_sex_island %>%
+	mutate(model=map(data,model))
+
+```
+Store the residuals and predictions from the linear model (regression) in the `by_sex_island` dataframe as `resids` and `pred`
+```{r}
+by_sex_island<-by_sex_island %>% 
+	mutate(resids= map2(data,model,add_residuals), pred= map2(data,model,add_predictions))
+
+by_sex_island
+```
+Plot the residuals from the models. First covert the nested dataframe into a regular dataframe using `unnest()` function. 
+```{r}
+resids<-unnest(by_sex_island,resids)
+```
+A scatter plot of residuals shows that, overall, the residuals for body mass for each year are mostly equally spaced on either side of zero (white reference line), suggesting that the linear model (regression) has sufficently captured the paterns in the data.
+
+```{r}
+resids %>%
+	ggplot(aes(year,resid))+
+	geom_point()+
+	ylim(-10,10)+
+	geom_ref_line(h = 0)+
+	facet_grid(sex~island)
+```
+The density plot of residuals (below) comfirms that the distribution of residuals on either side of zero is approximately equal. Note that in this plot, and the scatter plot above, there are usally larger residual values on the positive side of zero.
+```{r}
+ggplot(resids,aes(resid)) +
+	geom_freqpoly()+
+	xlim(-15,15)+
+	geom_ref_line(v = 0)+
+	facet_grid(sex~island)
+```
+Overall, the pattern (below and Figure 3 above) in the data is:   
+**1) a general increase mass of males and females over time on Bumpkin Island.**  
+**2) Pedocks Island shows little or no increase in mass for either sex.**  
+**3) The linear model is a good fit for the data and accurately predicts the response of change in body mass over time**  
+**THIS GOES IN THE PAPER**  
+  
+  
+*Below, figures that are identical to the figure shown above to check that the linear regression lines are the same (and they are!)*
+
+```{r}
+pred<-unnest(by_sex_island,pred)
+pred %>%
+	ggplot(aes(year,pred))+
+	geom_line()+
+	geom_point(aes(y=mass))+
+	facet_grid(sex~island)
+```
+Further assess model quality and fit by looking at model parameters (i.e., p-values and r-squared). 
+
+```{r}
+by_sex_island %>% 
+	mutate(glance=map(model,broom::glance))%>%
+	unnest(glance, .drop= TRUE)
+```
+In general, the fit of the linear models (regressions) for Bumpkin Island are significant. the p-value for males (1.096388e-14) and females (1.996993e-03) are less than 0.05. In addition, the `r.squared` values for males (0.426136078) indicates that the linear model captures over 40% variation in the mass by year. Females have lower values for `r.squared` (0.120328448) but still the linear model captures or explains over 10% of the variation in mass over years.  
+  
+Pedocks island linear models do not fit the data well and the `p.values` are well above 0.05. `r.squared` values also indicate that the linear models explain less that 3% of the varation in mass over years on Pedocks Island. 
+
+The latter result is not suprising. Look (below) at the slope and p-valus for the linear models (regressions). 
+```{r}
+by_sex_island %>% 
+	mutate(tidy=map(model,broom::tidy))%>%
+	unnest(tidy, .drop= TRUE)
+```
+The slope (`estimate`, `term` = `year`) of the regression for Pedocks Island males is negative (-0.62) and for females it is positive (0.34).This confirms the plot of predicted values above. However, the `p.value`s for males and females on Pedocks Island are well above 0.05 (M=1.999288e-01, F=6.099283e-01). Thus, there is no statistical evidence for an increase or decrease in the mass of mice over the two years of sampling.   
+  
+The slopes for regressions are positive for both males (1.23) and females (0.69) on Bumpkin Island and both are significant (Male`p.value`= 1.096388e-14; Feamle `p.value`= 1.996993e-03). The slope is greater for males reltative to females providing evidence for a larger increase in body mass over time in males relative to females. This confirms the patterns shown in Figure 3 (see above) and the scatter plot of predictions (see above). 
+
+**In general, there is evidence (figure 3), supported by statistical analysis (above), that the body mass of male and female mice on Bumpkin Island have increased over time.**  
+**THIS GOES IN THE PAPER**  
+  
+###**Hypothesis Testing**
+
+Given the evidence for a increase in body mass on Bumpkin Island over time, it is, perhaps, necessary to test the hypothesis that body masses are significanly larger later in the sampling period.  
+  
+First test for differences in mean mass between sexes and years and interactions between sex and year using `anova`. 
+
+```{r}
+by_island<-data %>%
+	group_by(island) %>%
+	nest()
+
+model2<-function(df){
+	lm(mass~sex*year,data=df)
+}
+by_island<-by_island%>%
+	mutate(model=map(data,model2)) %>%
+	mutate(anova=map(model,anova))
+
+by_island<-by_island %>% 
+	mutate(tidy= map(anova,tidy)) %>%
+	unnest(tidy, .drop=TRUE)
+
+by_island
+```
+The results of `anova`(above) confirm the results from model (regression) analysis. There is no significant difference in mean body mass between sexes on Pedocks Island (p=`r by_island$p.value[5]`) or between years (p=`r by_island$p.value[6]`). The interaction between year and sex is also not significant (p=`r by_island$p.value[7]`).  
+  
+Overall, mice on Pedocks island do not differ significantly in mass between sexes (p=`r by_island$p.value[1]`) but the masses of mice are different over years (p=`r by_island$p.value[2]`). The ANOVA suggests a significant interaction between sex and years (p=`r by_island$p.value[3]`).  
+  
+Follow up with a pariwise test to look more closely at the differences in mass over years. 
+
+```{r}
+data_bump<-data %>%
+	filter(island=="Bumpkin Island")
+
+bump_mass<-tidy(pairwise.t.test(data_bump$mass,data_bump$year,p.adjust.method = "bonferroni"))
+
+bump_mass
+```
+The pairwise, p.value adjusted (bonferonni) t.test indicates that body mass differs for mice on Bumpkin Island between years 2008 and 2014 (p=`r bump_mass$p.value[3]`), 2008 and 2015 (p=`r bump_mass$p.value[4]`), 2009 and 2014 (p=`r bump_mass$p.value[7]`), 2011 and 2014 (p=`r bump_mass$p.value[8]`), 2011 and 2015 (p=`r bump_mass$p.value[9]`)
+
+Construct an interactoon plot to visualize any potential interactions between body mass, sex and years. Plot the mean mass for males and females each year and look for interactions. Basically, over time is the avreage mass of males and females responding/changing in the same way (see below). 
+
+```{r}
+data_bump %>%
+	group_by(sex,year) %>%
+	summarise(mass=mean(mass)) %>%
+	ggplot(aes(year,mass,group=sex)) +
+	geom_point(aes(shape=sex)) +
+	geom_line(aes(linetype=sex)) + 
+	ylab("Mean Mass (g)") +
+	xlab("Year")
+```
+As suggested by the ANOVA (above) and shown in this plot, the mean mass of mice differ considerably between early (2008, 2009, and 2011) and later years (2014-2015). There is a large (significant, from `anova` above) increase in average mass between 2011 and 2014.  
+  
+In terms of interactions within years by sex, note that that between 2008, 2009, and 2011 average male mass was increasing steadily while female average mass was decreasing. Both sexes show a large increase after 2011, but males increased more then females (lines are not exaclty parallel and the space between masses in 2014 is less than 2011). From 2014 to 2015, the average males was more massive than females.   
+  
+Fit linear models to each year separately and look at estimates of mean body mass for both sexes. Should help to understand where male and female mean masses are, perahps, different and, perhaps, changing over years in different ways. 
+```{r}
+data_bump_by_year<-data_bump %>%
+	group_by(year) %>%
+	nest()
+
+model3 <-function(df) {
+	lm(mass~sex,data=df)
+}
+
+data_bump_by_year %>%
+	mutate(model=map(data,model3)) %>%
+	mutate(tidy=map(model,tidy)) %>%
+	unnest(tidy,.drop=TRUE)
+	
+```
+The linear models confirm that males were, on average, smaller than females in 2008, 2009, and 2011. The estimates for average size of males compared to females is -2.66, -2.51, and -1.12 grams. The estimates from 2008 and 2009 are significant (`p.value` < 0.05) suggeting that males are, on average, 2.6 to 2.6 grams smaller than females in those years. Estimates from 2011, 2014, and 2015 are not significant, but consistent with what is shown in the interaction plot. That is, males and females differed very little in 2014 and males were had greater mass (`estimate` is positive) in 2015.  
+  
+**Whether any of the latter is significant and worth considering is questionable given the potential for non-independence between years and multiple comparisons over years with no adjustment of p.values.**
