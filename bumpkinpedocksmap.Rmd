@@ -1,0 +1,138 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+```{r}
+library(maps)
+library(ggmap)
+library(rgdal)
+library(rgeos)
+#library(maptools)
+library(dplyr)
+library(tidyr)
+#library(tmap)
+library(rnaturalearth)
+library(grid)
+#library(PBSmapping)
+```
+
+
+```{r}
+geocode("Boston, MA",output = "more")
+geocode("Bumpkin Island,MA",output = "more")
+geocode("Peddocks Island,MA",output="more")
+geocode("Cape Cod, MA",output="more")
+geocode("Hull, MA",output="more")
+```
+
+```{r}
+coast<-readOGR("coast25k/ma_coast.shp")
+```
+
+```{r}
+coast<-spTransform(coast,CRS("+init=epsg:4267"))
+```
+
+```{r}
+islands<-readOGR("coast25k/islands.shp")
+islands<-spTransform(islands,CRS("+init=epsg:4267"))
+```
+
+```{r}
+coast%>%
+	fortify()->coast
+```
+
+```{r}
+islands<-fortify(islands)
+```
+
+```{r}
+states<-ne_states(country="United States of America")
+states<-spTransform(states,CRS("+init=epsg:4267"))
+```
+
+```{r}
+(states<-fortify(states))
+```
+
+
+
+```{r}
+maptheme <- theme(
+axis.text = element_blank(),
+axis.title = element_blank(),
+axis.ticks = element_blank(),
+panel.grid = element_blank(),
+panel.border = element_rect(fill = NA, colour = NA),
+panel.background = element_blank()
+)
+```
+
+
+```{r}
+ma<-states%>%
+filter(id==4407)
+````
+
+
+```{r}
+(a<-ggplot(states)+
+	geom_map(aes(x=long,y=lat,map_id=id),map=states,fill="grey80",color="black",size=0.01)+
+	geom_map(data=ma,aes(x=long,y=lat,map_id=id),map=states,fill="black",color="black",size=0.5)+
+	coord_map(ylim=c(49.5,24.5),xlim=c(-66.5,-125))+
+	annotate("text",x=-72,y=29,label="A",size=8)+
+	annotate("text",x=-71.5,y=36,label="Atlantic\n Ocean",size=2)+
+	maptheme)
+```
+
+```{r}
+(b<-ggplot(states)+
+	geom_map(aes(x=long,y=lat,map_id=id),map=states,fill="grey80",color="black")+
+	geom_map(data=ma,aes(x=long,y=lat,map_id=id),map=states,fill="black",color="black")+
+	geom_polygon(data=islands,aes(x=long,y=lat,group=group))+
+ 	coord_map(ylim=c(42.9,41.7),xlim=c(-69.9,-73.6))+
+	geom_rect(data = data.frame(),
+			aes(xmin = -71, 
+					xmax = -70.85, 
+					ymin = 42.25, 
+					ymax = 42.328),
+					colour = "black", 
+					fill = "grey",size=0.3)+
+	annotate("text",x=-70.2,y=42.7,label="B",size=8)+
+	#annotate("text",x=-70.5,y=42.45,label="Massachusett's\n Bay",size=2)+
+	geom_point(aes(x=-71.058,y=42.36),color="white",size=1)+
+	annotate("text",x=-71.3,y=42.4,label="Boston",size=3,color="white")+
+ 	annotate("text",x=-70.5,y=42.35,label="Study Site",size=3)+
+	maptheme)
+```
+
+```{r}
+(c<-ggplot()+
+	geom_polygon(data=coast,aes(x=long,y=lat,group=group))+
+ 	geom_polygon(data=islands,aes(x=long,y=lat,group=group))+
+	coord_map(xlim=c(-71,-70.855),ylim=c(42.25,42.31))+
+	geom_text(data = data.frame(), aes(x = -70.90044, y = 42.28068, label = "Bumpkin \n Island"),hjust= 0.6, vjust = -0.4)+
+	geom_text(data = data.frame(), aes(x = -70.9352, y = 42.29523, label = "Peddocks\n Island"),hjust = 1,vjust=-1.2)+
+	annotate("text",x=-70.995,y=42.259,label="C",size=8,color="white")+
+ 	maptheme)
+```
+
+
+```{r}
+grid.newpage()
+vp_c<-viewport(height = 0.8, width= 1,x = 0.5, y=0.35)#harbor map
+vp_a<-viewport(height = 0.3 ,width= 0.5,x = 0.23, y=0.865) #us map
+vp_b<-viewport(height = 0.3 ,width= 0.5,x = 0.735, y=0.865)# state map
+print(c,vp=vp_c)
+print(a,vp=vp_a)
+print(b,vp=vp_b)
+```
+```{r}
+
+```
+
+
