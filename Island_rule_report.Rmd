@@ -67,7 +67,7 @@ table(data$year)
 ```
 Reviewer # 2 stated that "...Island rule is island-dependent, strongly depending on the ecological context on each island" and indicated that "...it is doubtful if the two islands should be pooled."  
   
-Below is a plot of the data (over years (x-axis) and by sex (color)). The islands are separate and the relationship between year, mass, and sex (regression) is shown for each island. The parameters and statistics for the regresssion and the assessment of how well the model fits the data are provided below in discusssion below the figure. **THIS FIGURE SHOULD BE ADDED TO THE PAPER**
+Below is a plot of the data over years and by sex. The islands are separate and the relationship between year and mass for each sex (regression) is shown for each island. The parameters and statistics for the regresssion and the assessment of how well the model fits the data are provided below the figure. 
   
 ```{r,fig.cap="Figure 3",fig.height=6.8,fig.height=3.9}
 fig3<-ggplot(data) +
@@ -98,7 +98,7 @@ ggsave(plot=fig3,filename = "fig3.eps",width=174,height=100,units="mm")
 
 ###**Statistical analyses**  
  
-Analyze (`group_by()`) data separately by `island` and `sex`. Nest (`nest()`) data so that models can be fit and visualized easily.  
+Analyze (`group_by()`) data separately by `island` and `sex`. Nest (`nest()`) data so that models can be fit and visualized together.  
 ```{r}
 library(broom)
 library(modelr)
@@ -119,6 +119,7 @@ by_sex_island<-by_sex_island %>%
 
 ```
 Store the residuals and predictions from the linear model (regression) in the `by_sex_island` dataframe as `resids` and `pred`
+
 ```{r}
 by_sex_island<-by_sex_island %>% 
 	mutate(resids= map2(data,model,add_residuals), pred= map2(data,model,add_predictions))
@@ -164,7 +165,7 @@ pred %>%
 	geom_point(aes(y=mass))+
 	facet_grid(sex~island)
 ```
-Further assess model quality and fit by looking at model parameters (i.e., p-values and r-squared). 
+Further assess model quality and fit by looking at model parameters (i.e., p-values and r-squared values). 
 
 ```{r}
 by_sex_island %>% 
