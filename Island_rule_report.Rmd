@@ -69,7 +69,7 @@ Reviewer # 2 stated that "...Island rule is island-dependent, strongly depending
   
 Below is a plot of the data over years and by sex. The islands are separate and the relationship between year and mass for each sex (regression) is shown for each island. The parameters and statistics for the regresssion and the assessment of how well the model fits the data are provided below the figure. 
   
-```{r,fig.cap="Figure 3",fig.height=6.8,fig.height=3.9}
+```{r,fig.cap="Figure 2",fig.height=6.8,fig.height=3.9}
 fig3<-ggplot(data) +
 	aes(x=year,y=mass,color=sex) +
 	geom_point(position=position_jitter(width=0.2),size=2) +
@@ -93,7 +93,7 @@ fig3
 ```
 **Save Figure in appropriate format for journal**
 ```{r}
-ggsave(plot=fig3,filename = "fig3.eps",width=174,height=100,units="mm")
+ggsave(plot=fig3,filename = "fig2.eps",width=174,height=100,units="mm")
 ```
 
 ###**Statistical analyses**  

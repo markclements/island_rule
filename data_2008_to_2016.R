@@ -38,28 +38,37 @@ ped_2016<-gs_read(ped_2016)
 head(ped_2016)
 
 ped_2016 %>%
-	select(Gender,`Weight (g)`) %>%
+	select(Gender,`Weight (g)`,`ID Tag`,Age)%>%
+  filter(str_detect(Age,"Adult"))%>%
 	mutate(island="Pedocks Island",year=2016) %>%
 	rename(sex=Gender,mass=`Weight (g)`)%>%
-	mutate(mass=as.numeric(mass)) %>%
-	filter(mass!="NA") %>%
+	group_by(`ID Tag`,island,sex,year)%>%
+	mutate(mass=as.numeric(mass))%>%
+	filter(mass!="NA")%>%
+	summarise(mass=mean(mass))%>%	
 	bind_rows(.,data) -> data
 	
-	
+unique(ped_2016$Age)	
 
 bum_2016<-gs_key("1bVVKT1Rqu5QPn48e7JbtgB-VMLshf_49f0jHlixXfgw")
 bum_2016<-gs_read(bum_2016)
-
-unique(bum_2016$Species) 
+head(bum_2016)
+unique(bum_2016$ID)
+unique(bum_2016$Age)
 
 bum_2016 %>%
-	select(`Weight (G)`,Sex,Species) %>%
+	select(`Weight (G)`,Sex,Species,ID,Age) %>%
 	filter(Species=="pero" | Species =="spero") %>%
+	filter(str_detect(Age,"adult"))%>%
 	rename(sex=Sex,mass=`Weight (G)`) %>%
 	mutate(sex=str_to_upper(sex))%>%
 	mutate(island="Bumpkin Island",year=2016) %>%
 	filter(mass!="NA")%>%	
+	group_by(ID,island,sex,year)%>%
+	summarise(mass=mean(mass))%>%
 	bind_rows(.,data) -> data
+
+
 
 
 ggplot(data) +
