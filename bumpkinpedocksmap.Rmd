@@ -81,7 +81,7 @@ filter(id==4407)
 
 ```{r}
 (a<-ggplot(states)+
-	geom_map(aes(x=long,y=lat,map_id=id),map=states,fill="grey80",color="black",size=0.01)+
+	geom_map(aes(x=long,y=lat,map_id=id),map=states,fill="grey90",color="grey80",size=0.01)+
 	geom_map(data=ma,aes(x=long,y=lat,map_id=id),map=states,fill="black",color="black",size=0.5)+
 	coord_map(ylim=c(49.5,24.5),xlim=c(-66.5,-125))+
 	annotate("text",x=-72,y=29,label="A",size=8)+
@@ -122,7 +122,7 @@ filter(id==4407)
 ```
 
 
-```{r}
+```{r,fig.height=6.8,fig.height=3.9}
 grid.newpage()
 vp_c<-viewport(height = 0.8, width= 1,x = 0.5, y=0.35)#harbor map
 vp_a<-viewport(height = 0.3 ,width= 0.5,x = 0.23, y=0.865) #us map
@@ -132,7 +132,15 @@ print(a,vp=vp_a)
 print(b,vp=vp_b)
 ```
 ```{r}
-
+postscript("fig1.eps",width=6.8,height=5)
+grid.newpage()
+vp_c<-viewport(height = 0.8, width= 1,x = 0.5, y=0.35)#harbor map
+vp_a<-viewport(height = 0.3 ,width= 0.5,x = 0.23, y=0.865) #us map
+vp_b<-viewport(height = 0.3 ,width= 0.5,x = 0.735, y=0.865)# state map
+print(c,vp=vp_c)
+print(a,vp=vp_a)
+print(b,vp=vp_b)
+dev.off()
 ```
 
 

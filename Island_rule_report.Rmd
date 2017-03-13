@@ -72,7 +72,7 @@ Below is a plot of the data over years and by sex. The islands are separate and 
 ```{r,fig.cap="Figure 3",fig.height=6.8,fig.height=3.9}
 fig3<-ggplot(data) +
 	aes(x=year,y=mass,color=sex) +
-	geom_point(position=position_jitter(width=0.5),size=2) +
+	geom_point(position=position_jitter(width=0.2),size=2) +
 	scale_color_manual(name="Sex",values=c("black","grey50"),labels=c("Female","Male")) +
 	geom_smooth(method = "lm",se=F,size=0.5,lty=1)+
 	xlab("Year")+

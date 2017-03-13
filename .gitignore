@@ -4,3 +4,5 @@
 .Ruserdata
 island_rule.Rproj
 .httr-oauth
+coast25k/
+.DS_store
