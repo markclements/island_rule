@@ -1,8 +1,8 @@
 ---
 title: "R Notebook"
 output:
-  pdf_document: default
   html_notebook: default
+  pdf_document: default
 ---
 
 ```{r}
@@ -27,6 +27,7 @@ geocode("Peddocks Island,MA",output="more")
 geocode("Cape Cod, MA",output="more")
 geocode("Hull, MA",output="more")
 ```
+The vector line file for the MA coastline can be downloaded from the MassGIS webiste. The file was opended in QGIS and converted to polygon (ma_coast.shp) prior to figure generation. 
 
 ```{r}
 coast<-readOGR("coast25k/ma_coast.shp")
@@ -35,6 +36,8 @@ coast<-readOGR("coast25k/ma_coast.shp")
 ```{r}
 coast<-spTransform(coast,CRS("+init=epsg:4267"))
 ```
+
+The line vector file was manipulated in QGIS before plotting. Selected all islands in the Boston Harbor and coverted to polygon (islands.shp). 
 
 ```{r}
 islands<-readOGR("coast25k/islands.shp")
@@ -49,6 +52,7 @@ coast%>%
 ```{r}
 islands<-fortify(islands)
 ```
+Use Natural Earth and the rnaturalearth package to access vector polygon files for the United States.
 
 ```{r}
 states<-ne_states(country="United States of America")
